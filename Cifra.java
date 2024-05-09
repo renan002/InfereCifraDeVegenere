@@ -9,7 +9,7 @@ public class Cifra {
     static String alfabeto = "abcdefghijklmnopqrstuvwxyz";
     static char[] alfabetos = alfabeto.toCharArray();
     static String chave;
-    static final int tamanhoTextos = 16;
+    static int tamanhoTextos = 0;
 
     public static void main(String[] args) throws IOException {
 
@@ -17,11 +17,17 @@ public class Cifra {
         String texto2 = Files.readAllLines(Paths.get("textos/Texto2.txt"), Charset.defaultCharset()).get(0).toLowerCase();
         String texto3 = Files.readAllLines(Paths.get("textos/Texto3.txt"), Charset.defaultCharset()).get(0).toLowerCase();
 
+        tamanhoTextos = texto1.length();
+
         retornChaveCompleta();
 
         gravarCifra(texto1, "cifras/cifra1.txt");
         gravarCifra(texto2, "cifras/cifra2.txt");
         gravarCifra(texto3, "cifras/cifra3.txt");
+
+    }
+
+    private static void inferirCifra() {
 
     }
 
@@ -32,7 +38,7 @@ public class Cifra {
     }
 
     private static void retornChaveCompleta() throws IOException {
-        String chaveTmp = Files.readAllLines(Paths.get("textos/chave.txt"), Charset.defaultCharset()).get(0).toLowerCase();
+        String chaveTmp = Files.readAllLines(Paths.get("chaves/chave.txt"), Charset.defaultCharset()).get(0).toLowerCase();
 
         StringBuilder sb = new StringBuilder();
         sb.append(chaveTmp);
