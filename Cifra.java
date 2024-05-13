@@ -3,6 +3,8 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Cifra {
 
@@ -10,7 +12,8 @@ public class Cifra {
     static char[] alfabetos = alfabeto.toCharArray();
     static String chave;
     static int tamanhoTextos = 0;
-    static int[] quantidadeLetras = new int[26];
+    static HashMap<Character, Integer> quantidadeLetrasCifrados = new HashMap<Character, Integer>();
+    static HashMap<Character, Float> frequenciaLetrasCifrados = new HashMap<Character, Float>();
 
     public static void main(String[] args) throws IOException {
 
@@ -39,43 +42,64 @@ public class Cifra {
         popularArray(cifra2.toCharArray());
         popularArray(cifra3.toCharArray());
 
-        for (int i = 0; i < quantidadeLetras.length; i++) {
-            System.out.println(i + " " + quantidadeLetras[i]);
+        for(Character c : quantidadeLetrasCifrados.keySet()) {
+            int i = quantidadeLetrasCifrados.get(c);
+
+            float f = (float) i /tamanhoTextos*3;
+
+            frequenciaLetrasCifrados.put(c, f);
         }
+
+        frequenciaLetrasCifrados = sortByValue(frequenciaLetrasCifrados);
+
+        for (Character i : quantidadeLetrasCifrados.keySet()) {
+            System.out.println(i + " " + quantidadeLetrasCifrados.get(i));
+        }
+
 
         StringBuilder sb = new StringBuilder();
 
         System.out.println("========================================================");
 
-        for (int i = 0; i < quantidadeLetras.length; i++) {
-            int maior = 0;
-            int index = -1;
-            for (int j = 0; j < quantidadeLetras.length; j++) {
-                //System.out.println(j+" "+quantidadeLetras[j]);
-                if (quantidadeLetras[j] >= maior) {
-                    maior = quantidadeLetras[j];
-                    index = j;
-                }
-            }
-            quantidadeLetras[index] = 0;
-
-            System.out.println(i+" "+getCharByIndex(index) + " " + maior);
-            //System.out.println((char) ('a'-1));
-
+        for (Character i : frequenciaLetrasCifrados.keySet()) {
+            System.out.println(i + " " + frequenciaLetrasCifrados.get(i));
         }
 
 
+    }
 
+    public static HashMap<Character, Float> sortByValue(HashMap<Character, Float> hm)
+    {
+        // Create a list from elements of HashMap
+        List<Map.Entry<Character, Float> > list =
+                new LinkedList<>(hm.entrySet());
+
+        // Sort the list
+        list.sort(Map.Entry.comparingByValue());
+
+        Collections.reverse(list);
+
+        // put data from sorted list to hashmap
+        HashMap<Character, Float> temp = new LinkedHashMap<>();
+        for (Map.Entry<Character, Float> aa : list) {
+            temp.put(aa.getKey(), aa.getValue());
+        }
+        return temp;
     }
 
     private static int diferencaEntreChars(char a, char b) {
-        return getIndexByChar(a) - getIndexByChar(b);
+        int ia = getIndexByChar(a);
+        int ib = getIndexByChar(b);
+
+        return Math.max(ia, ib) - Math.min(ia, ib);
     }
 
     private static void popularArray(char[] arrayCifra) {
-        for (int i = 0; i < tamanhoTextos; i++) {
-            int index = getIndexByChar(arrayCifra[i]);
-            quantidadeLetras[index] += 1;
+        for (char c : arrayCifra) {
+            if (!quantidadeLetrasCifrados.containsKey(c))
+                quantidadeLetrasCifrados.put(c, 0);
+            int i = quantidadeLetrasCifrados.get(c);
+            quantidadeLetrasCifrados.put(c, i+1);
         }
     }
 
@@ -125,10 +149,6 @@ public class Cifra {
         for (int i = 0; i < texto.length(); i++) {
 
             int r = getIndexByChar(chave.charAt(i)) + getIndexByChar(texto.charAt(i));
-            System.out.println("chave "+getIndexByChar(chave.charAt(i)));
-            System.out.println("texto "+getIndexByChar(texto.charAt(i)));
-            System.out.println(i);
-            System.out.println(texto.charAt(i));
 
             while (r >= 26) r-=26;
             sb.append(alfabetos[r]);
