@@ -12,25 +12,28 @@ public class Cifra {
     static String chave;
     static int tamanhoTextos = 0;
     static HashMap<Character, Integer> quantidadeLetrasCifrados = new HashMap<Character, Integer>();
+    static HashMap<Character, Integer> quantidadeLetrasTextos = new HashMap<Character, Integer>();
     static HashMap<Character, Float> frequenciaLetrasCifrados = new HashMap<Character, Float>();
+    static HashMap<Character, Float> frequenciaLetrasTextos = new HashMap<Character, Float>();
     private static Map<String, Integer> bigramasCifrados = new HashMap<>();
     private static int totalBigramasCifrados = 0;
     private static Map<String, Integer> bigramasTextos = new HashMap<>();
     private static int totalBigramasTextos = 0;
+    static char[] frequenciaLetras = new char[] {'a', 'e', 'o', 's', 'r', 'i', 'n', 'd', 'm', 'u', 't', 'c', 'l', 'p', 'v', 'g', 'h', 'q', 'b', 'f', 'z', 'j', 'x', 'k', 'w', 'y'};
 
     static String cifra1;
     static String cifra2;
     static String cifra3;
+    static String texto1;
+    static String texto2;
+    static String texto3;
+
 
     public static void main(String[] args) throws IOException {
 
-        String texto1 = Files.readAllLines(Paths.get("textos/Texto1.txt"), Charset.defaultCharset()).get(0).toLowerCase();
-        String texto2 = Files.readAllLines(Paths.get("textos/Texto2.txt"), Charset.defaultCharset()).get(0).toLowerCase();
-        String texto3 = Files.readAllLines(Paths.get("textos/Texto3.txt"), Charset.defaultCharset()).get(0).toLowerCase();
-
-        cifra1 = Files.readAllLines(Paths.get("cifras/cifra1.txt"), Charset.defaultCharset()).get(0).toLowerCase();
-        cifra2 = Files.readAllLines(Paths.get("cifras/cifra2.txt"), Charset.defaultCharset()).get(0).toLowerCase();
-        cifra3 = Files.readAllLines(Paths.get("cifras/cifra3.txt"), Charset.defaultCharset()).get(0).toLowerCase();
+        texto1 = Files.readAllLines(Paths.get("textos/Texto1.txt"), Charset.defaultCharset()).get(0).toLowerCase();
+        texto2 = Files.readAllLines(Paths.get("textos/Texto2.txt"), Charset.defaultCharset()).get(0).toLowerCase();
+        texto3 = Files.readAllLines(Paths.get("textos/Texto3.txt"), Charset.defaultCharset()).get(0).toLowerCase();
 
         tamanhoTextos = texto1.length();
 
@@ -39,6 +42,11 @@ public class Cifra {
         gravarCifra(texto1, "cifras/cifra1.txt");
         gravarCifra(texto2, "cifras/cifra2.txt");
         gravarCifra(texto3, "cifras/cifra3.txt");
+
+        cifra1 = Files.readAllLines(Paths.get("cifras/cifra1.txt"), Charset.defaultCharset()).get(0).toLowerCase();
+        cifra2 = Files.readAllLines(Paths.get("cifras/cifra2.txt"), Charset.defaultCharset()).get(0).toLowerCase();
+        cifra3 = Files.readAllLines(Paths.get("cifras/cifra3.txt"), Charset.defaultCharset()).get(0).toLowerCase();
+
 
         //inferirCifra();
 
@@ -53,9 +61,14 @@ public class Cifra {
         calcularFrequenciaBigramasTextos(texto3);
 
 
-        System.out.println(analisarBigramas());
+        inferirCifra();
 
-        inferirChave(cifra1, quantidadeLetrasCifrados, bigramasCifrados);
+        //System.out.println(analisarBigramas());
+
+        //inferirChaveHill(cifra1, quantidadeLetrasCifrados, bigramasCifrados);
+        inferirChaveBruto(cifra1, quantidadeLetrasTextos, bigramasCifrados);
+
+
     }
 
     public static void calcularFrequenciaBigramasCifrados(String textoCifrado) {
@@ -120,14 +133,14 @@ public class Cifra {
         return analiseCifra.toString();
     }
 
-    /*private static String inferirChave(String textoCifrado, Map<Character, Integer> frequenciasLetras, Map<String, Integer> bigramas) {
+    private static String inferirChaveBruto(String textoCifrado, Map<Character, Integer> frequenciasLetras, Map<String, Integer> bigramas) {
         // Tentar todas as combinações possíveis de letras maiúsculas como chave
-        for (String chaveCandidata : gerarTodasChavesCandidatas()) {
+        for (String chaveCandidata : gerarTodasChavesCandidatas("p")) {
             String textoDescriptografado = descriptografarVigenere(textoCifrado, chaveCandidata);
 
             // Analisar a qualidade do texto descriptografado
-            Map<Character, Integer> frequenciasDescriptografadas = calcularFrequenciaLetras(textoDescriptografado);
-            double chiQuadrado = calcularChiQuadrado(frequenciasLetras, frequenciasDescriptografadas);
+            //Map<Character, Integer> frequenciasDescriptografadas = calcularFrequenciaLetras(textoDescriptografado);
+            double chiQuadrado = calcularChiQuadrado(frequenciasLetras, textoDescriptografado);
 
             // Se o chi-quadrado for baixo, a chave candidata pode ser a correta
             if (chiQuadrado < CHAVE_CANDIDATA_ACEITAVEL) {
@@ -135,7 +148,7 @@ public class Cifra {
                 return chaveCandidata;
             }
 
-            System.out.println(chiQuadrado);
+            //System.out.println(chiQuadrado);
         }
 
 
@@ -143,9 +156,9 @@ public class Cifra {
         // Nenhuma chave candidata encontrada
         System.out.println("Nenhuma chave candidata encontrada.");
         return "";
-    }*/
+    }
 
-    private static String inferirChave(String textoCifrado, Map<Character, Integer> frequenciasLetras, Map<Character, Integer> bigramas) {
+    private static String inferirChaveHill(String textoCifrado, Map<Character, Integer> frequenciasLetras, Map<String, Integer> bigramas) {
         // Criar uma chave candidata inicial aleatória
         String chaveCandidata = gerarChaveCandidataAleatoria();
 
@@ -192,17 +205,18 @@ public class Cifra {
     }
 
     // Método para gerar todas as combinações possíveis de letras maiúsculas como chave
-    private static List<String> gerarTodasChavesCandidatas() {
+    private static List<String> gerarTodasChavesCandidatas(String init) {
         List<String> chavesCandidatas = new ArrayList<>();
         StringBuilder chaveCandidata = new StringBuilder();
+        chaveCandidata.append(init);
 
         // Criar uma chave candidata inicial com 56 caracteres vazios
-        for (int i = 0; i < 56; i++) {
+        for (int i = 0; i < 5-init.length(); i++) {
             chaveCandidata.append("-");
         }
 
         // Gerar todas as combinações recursivamente
-        gerarChaveCandidataRecursiva(chavesCandidatas, chaveCandidata, 0);
+        gerarChaveCandidataRecursiva(chavesCandidatas, chaveCandidata, init.length());
 
         System.out.println("terminei de gerar as chaves");
 
@@ -210,9 +224,9 @@ public class Cifra {
     }
 
     private static void gerarChaveCandidataRecursiva(List<String> chavesCandidatas, StringBuilder chaveCandidata, int posicao) {
-        //if (posicao!=56)
+        //if (posicao!=10)
             //System.out.println("posição: "+posicao);
-        if (posicao == 56) {
+        if (posicao == 5) {
             // Uma chave candidata completa foi formada, adicionar à lista
             //System.out.println("Chave gerada: "+chaveCandidata);
             chavesCandidatas.add(chaveCandidata.toString());
@@ -230,18 +244,20 @@ public class Cifra {
     // Método para descriptografar o texto cifrado usando a chave fornecida
     private static String descriptografarVigenere(String textoCifrado, String chave) {
         StringBuilder textoDescriptografado = new StringBuilder();
+
         for (int i = 0; i < textoCifrado.length(); i++) {
             char letraCifrada = textoCifrado.charAt(i);
             char letraChave = chave.charAt(i % chave.length());
-            char letraOriginal = (char) ((letraCifrada - letraChave + 26) % 26 + 'A');
+            char letraOriginal = (char) ((letraCifrada - letraChave + 26) % 26 + 'a');
             textoDescriptografado.append(letraOriginal);
         }
         return textoDescriptografado.toString();
     }
 
     // Método para calcular o chi-quadrado entre duas frequências de letras
-    private static double calcularChiQuadrado(Map<Character, Integer> frequenciaEsperada, Map<Character, Integer> frequenciaObservada) {
+    private static double calcularChiQuadrado(Map<Character, Integer> frequenciaEsperada, String texto) {
         double chiQuadradoTotal = 0.0;
+        Map<Character, Integer> frequenciaObservada = calcularFrequenciaLetras(texto);
         for (char letra : alfabetos) {
             int frequenciaEsperadaLetra = frequenciaEsperada.getOrDefault(letra, 0);
             int frequenciaObservadaLetra = frequenciaObservada.getOrDefault(letra, 0);
@@ -254,15 +270,12 @@ public class Cifra {
     // Constante para definir o limite de chi-quadrado aceitável para uma chave candidata
     private static final double CHAVE_CANDIDATA_ACEITAVEL = 10.0;
 
-    private static void inferirCifra() throws IOException {
-        char[] frequenciaLetras = new char[] {'a', 'e', 'o', 's', 'r', 'i', 'n', 'd', 'm', 'u', 't', 'c', 'l', 'p', 'v', 'g', 'h', 'q', 'b', 'f', 'z', 'j', 'x', 'k', 'w', 'y'};
-        String cifra1 = Files.readAllLines(Paths.get("cifras/cifra1.txt"), Charset.defaultCharset()).get(0).toLowerCase();
-        String cifra2 = Files.readAllLines(Paths.get("cifras/cifra2.txt"), Charset.defaultCharset()).get(0).toLowerCase();
-        String cifra3 = Files.readAllLines(Paths.get("cifras/cifra3.txt"), Charset.defaultCharset()).get(0).toLowerCase();
+    private static void inferirCifra() {
+        popularArrayCifrado(cifra1.toCharArray());
+        popularArrayCifrado(cifra2.toCharArray());
+        popularArrayCifrado(cifra3.toCharArray());
 
-        popularArray(cifra1.toCharArray());
-        popularArray(cifra2.toCharArray());
-        popularArray(cifra3.toCharArray());
+        popularArrayTextos(texto1.toCharArray());
 
         for(Character c : quantidadeLetrasCifrados.keySet()) {
             int i = quantidadeLetrasCifrados.get(c);
@@ -272,7 +285,7 @@ public class Cifra {
             frequenciaLetrasCifrados.put(c, f);
         }
 
-        frequenciaLetrasCifrados = sortByValue(frequenciaLetrasCifrados);
+        frequenciaLetrasCifrados = Cifra.sortByValueF(frequenciaLetrasCifrados);
 
         for (Character i : quantidadeLetrasCifrados.keySet()) {
             System.out.println(i + " " + quantidadeLetrasCifrados.get(i));
@@ -290,7 +303,7 @@ public class Cifra {
 
     }
 
-    public static HashMap<Character, Float> sortByValue(HashMap<Character, Float> hm)
+    public static HashMap<Character, Float> sortByValueF(HashMap<Character, Float> hm)
     {
         // Create a list from elements of HashMap
         List<Map.Entry<Character, Float> > list =
@@ -316,13 +329,42 @@ public class Cifra {
         return Math.max(ia, ib) - Math.min(ia, ib);
     }
 
-    private static void popularArray(char[] arrayCifra) {
+    private static void popularArrayCifrado(char[] arrayCifra) {
         for (char c : arrayCifra) {
             if (!quantidadeLetrasCifrados.containsKey(c))
                 quantidadeLetrasCifrados.put(c, 0);
             int i = quantidadeLetrasCifrados.get(c);
             quantidadeLetrasCifrados.put(c, i+1);
+            quantidadeLetrasCifrados = sortByValue(quantidadeLetrasCifrados);
         }
+    }
+
+    private static void popularArrayTextos(char[] arrayCifra) {
+        for (char c : arrayCifra) {
+            if (!quantidadeLetrasTextos.containsKey(c))
+                quantidadeLetrasTextos.put(c, 0);
+            int i = quantidadeLetrasTextos.get(c);
+            quantidadeLetrasTextos.put(c, i+1);
+            quantidadeLetrasTextos = sortByValue(quantidadeLetrasTextos);
+        }
+    }
+
+    private static HashMap<Character, Integer> sortByValue(HashMap<Character, Integer> hm) {
+        // Create a list from elements of HashMap
+        List<Map.Entry<Character, Integer> > list =
+                new LinkedList<>(hm.entrySet());
+
+        // Sort the list
+        list.sort(Map.Entry.comparingByValue());
+
+        Collections.reverse(list);
+
+        // put data from sorted list to hashmap
+        HashMap<Character, Integer> temp = new LinkedHashMap<>();
+        for (Map.Entry<Character, Integer> aa : list) {
+            temp.put(aa.getKey(), aa.getValue());
+        }
+        return temp;
     }
 
     private static void gravarCifra(String texto, String nomeArquivo) throws IOException {
