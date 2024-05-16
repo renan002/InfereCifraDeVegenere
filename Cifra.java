@@ -15,11 +15,11 @@ public class Cifra {
     static HashMap<Character, Integer> quantidadeLetrasTextos = new HashMap<Character, Integer>();
     static HashMap<Character, Float> frequenciaLetrasCifrados = new HashMap<Character, Float>();
     static HashMap<Character, Float> frequenciaLetrasTextos = new HashMap<Character, Float>();
-    private static Map<String, Integer> bigramasCifrados = new HashMap<>();
-    private static int totalBigramasCifrados = 0;
-    private static Map<String, Integer> bigramasTextos = new HashMap<>();
-    private static int totalBigramasTextos = 0;
+    private static HashMap<String, Integer> repeticoesCifradas = new HashMap<>();
+    static HashMap<String, ArrayList<Repeticoes>> indexRepeticoesCifradas = new HashMap<>();
+    private static int totalRepeticoesCifradas = 0;
     static char[] frequenciaLetras = new char[] {'a', 'e', 'o', 's', 'r', 'i', 'n', 'd', 'm', 'u', 't', 'c', 'l', 'p', 'v', 'g', 'h', 'q', 'b', 'f', 'z', 'j', 'x', 'k', 'w', 'y'};
+    static int minRepeticoes = 3;
 
     static String cifra1;
     static String cifra2;
@@ -47,49 +47,45 @@ public class Cifra {
         cifra2 = Files.readAllLines(Paths.get("cifras/cifra2.txt"), Charset.defaultCharset()).get(0).toLowerCase();
         cifra3 = Files.readAllLines(Paths.get("cifras/cifra3.txt"), Charset.defaultCharset()).get(0).toLowerCase();
 
-
-        //inferirCifra();
-
         System.out.println("===============================================================================================");
-
-        calcularFrequenciaBigramasCifrados(cifra1);
-        calcularFrequenciaBigramasCifrados(cifra2);
-        calcularFrequenciaBigramasCifrados(cifra3);
-
-        calcularFrequenciaBigramasTextos(texto1);
-        calcularFrequenciaBigramasTextos(texto2);
-        calcularFrequenciaBigramasTextos(texto3);
 
 
         inferirCifra();
 
-        //System.out.println(analisarBigramas());
+        repeticoesCifradas = obterRepticoesCifradas(cifra1);
+
+        repeticoesCifradas.forEach((k, v) -> {
+            if(v > 1)
+                System.out.printf("Sequencia: %s - Repeticoes: %s\n", k, v);
+        });
+
+        indexRepeticoesCifradas.forEach((k, v) -> {
+            indexRepeticoesCifradas.get(k).forEach(System.out::println);
+        });
 
         //inferirChaveHill(cifra1, quantidadeLetrasCifrados, bigramasCifrados);
-        inferirChaveBruto(cifra1, quantidadeLetrasTextos, bigramasCifrados);
 
 
     }
 
-    public static void calcularFrequenciaBigramasCifrados(String textoCifrado) {
-        for (int i = 0; i < tamanhoTextos - 1; i++) {
-            String bigrama = textoCifrado.substring(i, i + 2);
-            if (!bigramasCifrados.containsKey(bigrama)) {
-                bigramasCifrados.put(bigrama, 0);
+    private static HashMap<String, Integer> obterRepticoesCifradas(String cifra) {
+        HashMap<String, Integer> retorno = new HashMap<>();
+        for (int j = minRepeticoes; j < tamanhoTextos; j++) {
+            for (int i = 0; i < cifra.length() - j + 1; i++) {
+                String sequencia = cifra.substring(i, i + j);
+
+                // Verificar se a sequência já está no mapa
+                if (retorno.containsKey(sequencia)) {
+                    retorno.put(sequencia, retorno.get(sequencia) + 1);
+                    indexRepeticoesCifradas.get(sequencia).add(new Repeticoes(i, i+j));
+                } else {
+                    retorno.put(sequencia, 1);
+                    indexRepeticoesCifradas.put(sequencia, new ArrayList<>());
+                }
             }
-            bigramasCifrados.put(bigrama, bigramasCifrados.get(bigrama) + 1);
-            totalBigramasCifrados++;
         }
-    }
-    public static void calcularFrequenciaBigramasTextos(String texto) {
-        for (int i = 0; i < tamanhoTextos - 1; i++) {
-            String bigrama = texto.substring(i, i + 2);
-            if (!bigramasTextos.containsKey(bigrama)) {
-                bigramasTextos.put(bigrama, 0);
-            }
-            bigramasTextos.put(bigrama, bigramasTextos.get(bigrama) + 1);
-            totalBigramasTextos++;
-        }
+
+        return sortByValueS(retorno);
     }
 
     private static Map<Character, Integer> calcularFrequenciaLetras(String texto) {
@@ -100,37 +96,6 @@ public class Cifra {
             //}
         }
         return frequencias;
-    }
-
-    public static String analisarBigramas() {
-        StringBuilder analiseCifra = new StringBuilder();
-        StringBuilder analiseTexto = new StringBuilder();
-
-        // Ordenar bigramasCifrados por frequência decrescente
-        List<Map.Entry<String, Integer>> bigramasCifradosOrdenados = new ArrayList<>(bigramasCifrados.entrySet());
-        bigramasCifradosOrdenados.sort((e1, e2) -> e2.getValue().compareTo(e1.getValue()));
-        List<Map.Entry<String, Integer>> bigramasTextosOrdenados = new ArrayList<>(bigramasTextos.entrySet());
-        bigramasTextosOrdenados.sort((e1, e2) -> e2.getValue().compareTo(e1.getValue()));
-
-        // Analisar os bigramasCifrados mais frequentes
-        for (Map.Entry<String, Integer> entry : bigramasCifradosOrdenados) {
-            String bigrama = entry.getKey();
-            int frequencia = entry.getValue();
-            double probabilidade = (double) frequencia / totalBigramasCifrados;
-            analiseCifra.append(String.format("Bigrama: %s, Frequência: %d, Probabilidade: %.6f\n", bigrama, frequencia, probabilidade));
-        }
-
-        for (Map.Entry<String, Integer> entry : bigramasTextosOrdenados) {
-            String bigrama = entry.getKey();
-            int frequencia = entry.getValue();
-            double probabilidade = (double) frequencia / totalBigramasCifrados;
-            analiseTexto.append(String.format("Bigrama: %s, Frequência: %d, Probabilidade: %.6f\n", bigrama, frequencia, probabilidade));
-        }
-        System.out.println(analiseTexto);
-
-        System.out.println("===============================================================================================");
-
-        return analiseCifra.toString();
     }
 
     private static String inferirChaveBruto(String textoCifrado, Map<Character, Integer> frequenciasLetras, Map<String, Integer> bigramas) {
@@ -367,6 +332,24 @@ public class Cifra {
         return temp;
     }
 
+    private static HashMap<String, Integer> sortByValueS(HashMap<String, Integer> hm) {
+        // Create a list from elements of HashMap
+        List<Map.Entry<String, Integer> > list =
+                new LinkedList<>(hm.entrySet());
+
+        // Sort the list
+        list.sort(Map.Entry.comparingByValue());
+
+        Collections.reverse(list);
+
+        // put data from sorted list to hashmap
+        HashMap<String, Integer> temp = new LinkedHashMap<>();
+        for (Map.Entry<String, Integer> aa : list) {
+            temp.put(aa.getKey(), aa.getValue());
+        }
+        return temp;
+    }
+
     private static void gravarCifra(String texto, String nomeArquivo) throws IOException {
         FileWriter cifra = new FileWriter(nomeArquivo);
         cifra.write(retornaTextoCifrado(texto));
@@ -419,5 +402,31 @@ public class Cifra {
         }
 
         return sb.toString();
+    }
+}
+
+class Repeticoes {
+    int inicio;
+    int fim;
+
+    public Repeticoes(int inicio, int fim) {
+        this.fim = fim;
+        this.inicio = inicio;
+    }
+
+    public int getFim() {
+        return fim;
+    }
+
+    public int getInicio() {
+        return inicio;
+    }
+
+    @Override
+    public String toString() {
+        return "Repeticoes {" +
+                "inicio=" + inicio +
+                ", fim=" + fim +
+                '}';
     }
 }
