@@ -49,9 +49,15 @@ public class Cifra {
 
         //popularArrayCifrado(cifras);
 
-        fatiarTextosCifrados(cifras, tamanhoFinal);
+        int[][] fatias = fatiarTextosCifrados(cifras, tamanhoFinal);
 
-
+        for (int k = 0; k < fatias.length; k++) {
+            int[] i = fatias[k];
+            for (int j : i) {
+                System.out.printf("Key: %s - char: %c - Quantidade: %s \n", k, getCharByIndex(j), i[j]);
+            }
+        }
+        System.out.printf("");
     }
 
     private static int estimarTamanhoDaChave(String[] cifras) {
@@ -147,16 +153,25 @@ public class Cifra {
         return sortByValueS(retorno);
     }
 
-    private static String[] fatiarTextosCifrados(String[] cifras, int tamanhoChave) {
+    private static int[][] fatiarTextosCifrados(String[] cifras, int tamanhoChave) {
         int quantidadeFatias = tamanhoTextos/tamanhoChave;
-        String[] retorno = new String[quantidadeFatias];
+        String[] fatias = new String[quantidadeFatias];
+        int[][] retorno = new int[quantidadeFatias][26];
         for (String cifra : cifras) {
             int init = 0;
             for (int i = 0; i < quantidadeFatias; i++) {
-                retorno[i] = cifra.substring(init, init+=tamanhoChave);
-                //init+=tamanhoChave;
+                fatias[i] = cifra.substring(init, init += tamanhoChave);
+                System.out.println(fatias[i]);
             }
 
+            for (int i = 0; i < fatias.length; i++) {
+                char[] chars = fatias[i].toCharArray();
+                for (char c : chars) {
+                    retorno[i][getIndexByChar(c)]+=1;
+                }
+
+
+            }
         }
 
         return retorno;
