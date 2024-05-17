@@ -17,9 +17,9 @@ public class Cifra {
     static HashMap<Character, Float> frequenciaLetrasTextos = new HashMap<Character, Float>();
     private static HashMap<String, Integer> repeticoesCifradas = new HashMap<>();
     static HashMap<String, ArrayList<Repeticoes>> indexRepeticoesCifradas = new HashMap<>();
-    private static int totalRepeticoesCifradas = 0;
     static char[] frequenciaLetras = new char[] {'a', 'e', 'o', 's', 'r', 'i', 'n', 'd', 'm', 'u', 't', 'c', 'l', 'p', 'v', 'g', 'h', 'q', 'b', 'f', 'z', 'j', 'x', 'k', 'w', 'y'};
-    static int minRepeticoes = 3;
+    static int minRepeticoes = 4;
+    static int quantidadeDeRepeticoesAnalisadas = 15;
 
     static String cifra1;
     static String cifra2;
@@ -39,13 +39,9 @@ public class Cifra {
 
         retornaChaveCompleta();
 
-        gravarCifra(texto1, "cifras/cifra1.txt");
-        gravarCifra(texto2, "cifras/cifra2.txt");
-        gravarCifra(texto3, "cifras/cifra3.txt");
-
-        cifra1 = Files.readAllLines(Paths.get("cifras/cifra1.txt"), Charset.defaultCharset()).get(0).toLowerCase();
-        cifra2 = Files.readAllLines(Paths.get("cifras/cifra2.txt"), Charset.defaultCharset()).get(0).toLowerCase();
-        cifra3 = Files.readAllLines(Paths.get("cifras/cifra3.txt"), Charset.defaultCharset()).get(0).toLowerCase();
+        cifra1 = gravarCifra(texto1, "cifras/cifra1.txt");
+        cifra2 = gravarCifra(texto2, "cifras/cifra2.txt");
+        cifra3 = gravarCifra(texto3, "cifras/cifra3.txt");
 
         System.out.println("===============================================================================================");
 
@@ -59,13 +55,82 @@ public class Cifra {
                 System.out.printf("Sequencia: %s - Repeticoes: %s\n", k, v);
         });
 
-        indexRepeticoesCifradas.forEach((k, v) -> {
-            indexRepeticoesCifradas.get(k).forEach(System.out::println);
-        });
+        System.out.println("============================================");
+
+        //indexRepeticoesCifradas.forEach((k,v) -> indexRepeticoesCifradas.get(k).forEach(r -> System.out.println(k + " - "+r)));
 
         //inferirChaveHill(cifra1, quantidadeLetrasCifrados, bigramasCifrados);
 
+        int tamanhoFinal = estimarTamanhoDaChave();
 
+        System.out.printf("Tamanho final: %d\n", tamanhoFinal);
+    }
+
+    private static int estimarTamanhoDaChave() {
+        HashMap<Integer, Integer> votos = new HashMap<>();
+
+        int i = 0;
+        for (String key : repeticoesCifradas.keySet()) {
+
+            int v = mdcEntreIndexes(indexRepeticoesCifradas.get(key));
+
+            if (v==1) continue;
+
+            if (!votos.containsKey(v))
+                votos.put(v, 0);
+
+            votos.put(v, votos.get(v)+1);
+
+            i++;
+            if (i>quantidadeDeRepeticoesAnalisadas) break;
+        }
+
+        votos = sortByValueII(votos);
+
+        votos.forEach((k,v) ->
+                System.out.printf("key: %s - value: %s \n", k, v));
+
+        Object key0 = votos.keySet().toArray()[0];
+        if(votos.size()>1) {
+            Object key1 = votos.keySet().toArray()[1];
+
+            Integer tamanho = votos.get(key0);
+            if (tamanho.equals(votos.get(key1))) {
+                System.out.printf("Tamanho parcial: %s\n", key0);
+                quantidadeDeRepeticoesAnalisadas += 5;
+                key0 = estimarTamanhoDaChave();
+            }
+        }
+
+        return (int) key0;
+    }
+
+    private static int mdcEntreIndexes(List<Repeticoes> lista) {
+        int[] distancias = new int[lista.size()];
+        for (int i = lista.size()-1; i > 0; i--) {
+            //System.out.printf("lista.get(%d).getInicio(): %d\n",i,lista.get(i).getInicio());
+            distancias[i] = lista.get(i).getInicio() - lista.get(i-1).getInicio();
+        }
+
+        int mdc = mdcAux(distancias[0], distancias[1]);
+
+        //System.out.println("--------------------");
+
+        for (int i = 2; i < distancias.length; i++) {
+            //System.out.printf("distancia[%d]: %d\n",i,distancias[i]);
+            mdc = mdcAux(mdc, distancias[i]);
+        }
+
+        return mdc;
+    }
+
+    private static int mdcAux(int a, int b) {
+        while(b != 0){
+            int r = a % b;
+            a = b;
+            b = r;
+        }
+        return a;
     }
 
     private static HashMap<String, Integer> obterRepticoesCifradas(String cifra) {
@@ -80,7 +145,9 @@ public class Cifra {
                     indexRepeticoesCifradas.get(sequencia).add(new Repeticoes(i, i+j));
                 } else {
                     retorno.put(sequencia, 1);
-                    indexRepeticoesCifradas.put(sequencia, new ArrayList<>());
+                    ArrayList<Repeticoes> l = new ArrayList<>();
+                    l.add(new Repeticoes(i, i+j));
+                    indexRepeticoesCifradas.put(sequencia, l);
                 }
             }
         }
@@ -350,21 +417,44 @@ public class Cifra {
         return temp;
     }
 
-    private static void gravarCifra(String texto, String nomeArquivo) throws IOException {
-        FileWriter cifra = new FileWriter(nomeArquivo);
-        cifra.write(retornaTextoCifrado(texto));
-        cifra.close();
+    private static HashMap<Integer, Integer> sortByValueII(HashMap<Integer, Integer> hm) {
+        // Create a list from elements of HashMap
+        List<Map.Entry<Integer, Integer> > list =
+                new LinkedList<>(hm.entrySet());
+
+        // Sort the list
+        list.sort(Map.Entry.comparingByValue());
+
+        Collections.reverse(list);
+
+        // put data from sorted list to hashmap
+        HashMap<Integer, Integer> temp = new LinkedHashMap<>();
+        for (Map.Entry<Integer, Integer> aa : list) {
+            temp.put(aa.getKey(), aa.getValue());
+        }
+        return temp;
+    }
+
+    private static String gravarCifra(String texto, String nomeArquivo) throws IOException {
+        String cifra = retornaTextoCifrado(texto);
+        FileWriter cifraF = new FileWriter(nomeArquivo);
+        cifraF.write(cifra);
+        cifraF.close();
+
+        return cifra;
     }
 
     private static void retornaChaveCompleta() throws IOException {
         String chaveTmp = Files.readAllLines(Paths.get("chaves/chave.txt"), Charset.defaultCharset()).get(0).toLowerCase();
+
+        int tamanhoIncialChave = chaveTmp.length();
 
         StringBuilder sb = new StringBuilder();
         sb.append(chaveTmp);
         char[] letrasDaChave = chaveTmp.toCharArray();
 
         while (sb.length() < tamanhoTextos) {
-            sb.append(letrasDaChave[sb.length() % 5]);
+            sb.append(letrasDaChave[sb.length() % tamanhoIncialChave]);
         }
         chave = sb.toString();
     }
@@ -406,8 +496,8 @@ public class Cifra {
 }
 
 class Repeticoes {
-    int inicio;
-    int fim;
+    private int inicio;
+    private int fim;
 
     public Repeticoes(int inicio, int fim) {
         this.fim = fim;
