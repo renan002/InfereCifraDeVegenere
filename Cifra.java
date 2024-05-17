@@ -11,7 +11,6 @@ public class Cifra {
     static char[] alfabetos = alfabeto.toCharArray();
     static String chave;
     static int tamanhoTextos = 0;
-    static HashMap<Character, Integer> quantidadeLetrasCifrados = new HashMap<Character, Integer>();
     static HashMap<String, ArrayList<Repeticoes>> indexRepeticoesCifradas = new HashMap<>();
     static char[] frequenciaLetras = new char[] {'a', 'e', 'o', 's', 'r', 'i', 'n', 'd', 'm', 'u', 't', 'c', 'l', 'p', 'v', 'g', 'h', 'q', 'b', 'f', 'z', 'j', 'x', 'k', 'w', 'y'};
     static int minRepeticoes = 4;
@@ -49,15 +48,28 @@ public class Cifra {
 
         //popularArrayCifrado(cifras);
 
-        int[][] fatias = fatiarTextosCifrados(cifras, tamanhoFinal);
+        int[][] fatiasCifradas = fatiarTextos(cifras, tamanhoFinal);
 
-        for (int k = 0; k < fatias.length; k++) {
-            int[] i = fatias[k];
-            for (int j : i) {
-                System.out.printf("Key: %s - char: %c - Quantidade: %s \n", k, getCharByIndex(j), i[j]);
+
+        StringBuilder sb = new StringBuilder();
+
+        for (int k = 0; k < fatiasCifradas.length; k++) {
+            int[] i = fatiasCifradas[k];
+            char charMaior = 'a';
+            int freqMaior = 0;
+            for (int i1 = 0; i1 < i.length; i1++) {
+                int j = i[i1];
+                System.out.printf("Key: %s - char: %c - Quantidade: %s \n", k, getCharByIndex(i1), j);
+                if (j>freqMaior) {
+                    freqMaior = j;
+                    charMaior = getCharByIndex(i1);
+                }
             }
+            sb.append(obterCharFinal(charMaior,frequenciaLetras[k]));
+            //sb.append(charMaior);
+            System.out.println("=======================================================================");
         }
-        System.out.printf("");
+        System.out.println(sb);
     }
 
     private static int estimarTamanhoDaChave(String[] cifras) {
@@ -90,12 +102,23 @@ public class Cifra {
             if (tamanho.equals(votos.get(key1))) {
                 System.out.printf("Tamanho parcial: %s\n", key0);
                 quantidadeDeRepeticoesAnalisadas += 5;
-                minRepeticoes++;
+                //minRepeticoes++;
                 key0 = estimarTamanhoDaChave(cifras);
             }
         }
 
         return (int) key0;
+    }
+
+    static char obterCharFinal(char a, char b) {
+        int ai = getIndexByChar(a);
+        int bi = getIndexByChar(b);
+
+        int r = Math.max(ai, bi) - Math.min(ai, bi);
+
+        //while (r >= 26) r-=26;
+
+        return getCharByIndex(r);
     }
 
     private static int mdcEntreIndexes(List<Repeticoes> lista) {
@@ -153,10 +176,10 @@ public class Cifra {
         return sortByValueS(retorno);
     }
 
-    private static int[][] fatiarTextosCifrados(String[] cifras, int tamanhoChave) {
+    private static int[][] fatiarTextos(String[] cifras, int tamanhoChave) {
         int quantidadeFatias = tamanhoTextos/tamanhoChave;
         String[] fatias = new String[quantidadeFatias];
-        int[][] retorno = new int[quantidadeFatias][26];
+        int[][] retorno = new int[tamanhoChave][26];
         for (String cifra : cifras) {
             int init = 0;
             for (int i = 0; i < quantidadeFatias; i++) {
@@ -164,13 +187,11 @@ public class Cifra {
                 System.out.println(fatias[i]);
             }
 
-            for (int i = 0; i < fatias.length; i++) {
-                char[] chars = fatias[i].toCharArray();
-                for (char c : chars) {
-                    retorno[i][getIndexByChar(c)]+=1;
+            for (int i = 0; i < tamanhoChave; i++) {
+                for (String s : fatias){
+                    char c = s.charAt(i);
+                    retorno[i][getIndexByChar(c)]++;
                 }
-
-
             }
         }
 
@@ -179,40 +200,12 @@ public class Cifra {
 
     private static Map<Character, Integer> calcularFrequenciaLetras(String texto) {
         Map<Character, Integer> frequencias = new HashMap<>();
-        for (char letra : texto.toLowerCase().toCharArray()) {
-            //if (Collections.singletonList(alfabetos).contains(letra)) {
+        for (char letra : texto.toLowerCase().toCharArray())
             frequencias.put(letra, frequencias.getOrDefault(letra, 0) + 1);
-            //}
-        }
         return frequencias;
     }
 
-    private static String inferirChaveBruto(String textoCifrado, Map<Character, Integer> frequenciasLetras, int tamanhoChave) {
-        // Tentar todas as combinações possíveis de letras maiúsculas como chave
-        for (String chaveCandidata : gerarTodasChavesCandidatas("p", tamanhoChave)) {
-            String textoDescriptografado = descriptografarVigenere(textoCifrado, chaveCandidata);
-
-            // Analisar a qualidade do texto descriptografado
-            //Map<Character, Integer> frequenciasDescriptografadas = calcularFrequenciaLetras(textoDescriptografado);
-            double chiQuadrado = calcularChiQuadrado(frequenciasLetras, textoDescriptografado);
-
-            // Se o chi-quadrado for baixo, a chave candidata pode ser a correta
-            if (chiQuadrado < CHAVE_CANDIDATA_ACEITAVEL) {
-                System.out.println("Chave Candidata: " + chaveCandidata + ", Chi-Quadrado: " + chiQuadrado);
-                return chaveCandidata;
-            }
-
-            //System.out.println(chiQuadrado);
-        }
-
-
-
-        // Nenhuma chave candidata encontrada
-        System.out.println("Nenhuma chave candidata encontrada.");
-        return "";
-    }
-
-    private static String inferirChaveHill(String textoCifrado, Map<Character, Integer> frequenciasLetras, Map<String, Integer> bigramas) {
+    private static String inferirChaveHill(String textoCifrado, Map<Character, Integer> frequenciasLetras) {
         // Criar uma chave candidata inicial aleatória
         String chaveCandidata = gerarChaveCandidataAleatoria();
 
@@ -256,43 +249,6 @@ public class Cifra {
             }
         }
         return chaveMutante.toString();
-    }
-
-    // Método para gerar todas as combinações possíveis de letras maiúsculas como chave
-    private static List<String> gerarTodasChavesCandidatas(String init, int tamanhoChave) {
-        List<String> chavesCandidatas = new ArrayList<>();
-        StringBuilder chaveCandidata = new StringBuilder();
-        chaveCandidata.append(init);
-
-        // Criar uma chave candidata inicial com 56 caracteres vazios
-        for (int i = 0; i < 5-init.length(); i++) {
-            chaveCandidata.append("-");
-        }
-
-        // Gerar todas as combinações recursivamente
-        gerarChaveCandidataRecursiva(chavesCandidatas, chaveCandidata, init.length());
-
-        System.out.println("terminei de gerar as chaves");
-
-        return chavesCandidatas;
-    }
-
-    private static void gerarChaveCandidataRecursiva(List<String> chavesCandidatas, StringBuilder chaveCandidata, int posicao) {
-        //if (posicao!=10)
-            //System.out.println("posição: "+posicao);
-        if (posicao == 5) {
-            // Uma chave candidata completa foi formada, adicionar à lista
-            //System.out.println("Chave gerada: "+chaveCandidata);
-            chavesCandidatas.add(chaveCandidata.toString());
-            return;
-        }
-
-        // Substituir cada caractere "-" por uma letra maiúscula
-        for (char letra : alfabetos) {
-            chaveCandidata.setCharAt(posicao, letra);
-            gerarChaveCandidataRecursiva(chavesCandidatas, chaveCandidata, posicao + 1);
-            chaveCandidata.setCharAt(posicao, '-'); // Voltar para "-" para explorar outras letras
-        }
     }
 
     // Método para descriptografar o texto cifrado usando a chave fornecida
@@ -349,17 +305,6 @@ public class Cifra {
         int ib = getIndexByChar(b);
 
         return Math.max(ia, ib) - Math.min(ia, ib);
-    }
-
-    private static void popularArrayCifrado(String[] cifras) {
-        for (String cifra : cifras) {
-            for (char c : cifra.toCharArray()) {
-                if (!quantidadeLetrasCifrados.containsKey(c))
-                    quantidadeLetrasCifrados.put(c, 0);
-                quantidadeLetrasCifrados.compute(c, (k, i) -> i + 1);
-                quantidadeLetrasCifrados = sortByValue(quantidadeLetrasCifrados);
-            }
-        }
     }
 
     private static HashMap<Character, Integer> sortByValue(HashMap<Character, Integer> hm) {
