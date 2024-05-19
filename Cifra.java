@@ -12,7 +12,7 @@ public class Cifra {
     static String chave;
     static int tamanhoTextos = 0;
     static HashMap<String, ArrayList<Repeticoes>> indexRepeticoesCifradas = new HashMap<>();
-    static char[] frequenciaLetras = new char[] {'a', 'e', 'o', 's', 'r', 'i', 'n', 'd', 'm', 'u', 't', 'c', 'l', 'p', 'v', 'g', 'h', 'q', 'b', 'f', 'z', 'j', 'x', 'k', 'w', 'y'};
+    static char[] frequenciaLetrasAlfabeto = new char[] {'a', 'e', 'o', 's', 'r', 'i', 'n', 'd', 'm', 'u', 't', 'c', 'l', 'p', 'v', 'g', 'h', 'q', 'b', 'f', 'z', 'j', 'x', 'k', 'w', 'y'};
     static int minRepeticoes = 4;
     static int quantidadeDeRepeticoesAnalisadas = 15;
 
@@ -40,17 +40,23 @@ public class Cifra {
 
         String[] cifras = new String[]{cifra1, cifra2, cifra3};
 
+        String[] textos = new String[]{texto1, texto2, texto3};
+
+        Map[] frequenciasTextos = new HashMap[textos.length];
+
+        for (int i = 0; i < textos.length; i++) {
+            frequenciasTextos[i] = calcularFrequenciaLetras(textos[i]);
+        }
+
         System.out.println("===============================================================================================");
 
         int tamanhoFinal = estimarTamanhoDaChave(cifras);
 
         System.out.printf("Tamanho final: %d\n", tamanhoFinal);
 
-        //popularArrayCifrado(cifras);
-
         int[][] fatiasCifradas = fatiarTextos(cifras, tamanhoFinal);
 
-
+        StringBuilder sb1 = new StringBuilder();
         StringBuilder sb = new StringBuilder();
 
         for (int k = 0; k < fatiasCifradas.length; k++) {
@@ -65,11 +71,15 @@ public class Cifra {
                     charMaior = getCharByIndex(i1);
                 }
             }
-            sb.append(obterCharFinal(charMaior,frequenciaLetras[k]));
-            //sb.append(charMaior);
+            sb1.append(obterCharFinal(charMaior, frequenciaLetrasAlfabeto[k]));
+            sb.append(charMaior);
             System.out.println("=======================================================================");
         }
+        //System.out.println(sb1);
         System.out.println(sb);
+
+        inferirChaveHill(cifras, frequenciasTextos, sb.toString());
+
     }
 
     private static int estimarTamanhoDaChave(String[] cifras) {
@@ -205,9 +215,7 @@ public class Cifra {
         return frequencias;
     }
 
-    private static String inferirChaveHill(String textoCifrado, Map<Character, Integer> frequenciasLetras) {
-        // Criar uma chave candidata inicial aleatória
-        String chaveCandidata = gerarChaveCandidataAleatoria();
+    private static String inferirChaveHill(String[] textosCifrados, Map<Character, Integer>[] frequenciasLetras, String chaveInicial) {
 
         // Definir parâmetros do Hill-climbing
         int maxIteracoes = 1000; // Número máximo de iterações
@@ -215,21 +223,29 @@ public class Cifra {
 
         // Realizar o Hill-climbing
         for (int iteracao = 0; iteracao < maxIteracoes; iteracao++) {
-            // Avaliar a qualidade da chave candidata atual
-            double chiQuadradoAtual = calcularChiQuadrado(frequenciasLetras, descriptografarVigenere(textoCifrado, chaveCandidata));
+            // Avaliar a qualidade da chave candidata em todos os textos
+            double chiQuadradoTotal = 0.0;
+            for (int i = 0; i < textosCifrados.length; i++) {
+                String textoCifrado = textosCifrados[i];
+                chiQuadradoTotal += calcularChiQuadrado(frequenciasLetras[i], descriptografarVigenere(textoCifrado, chaveInicial));
+            }
 
             // Tentar mutações na chave candidata
-            String chaveMutante = gerarChaveMutante(chaveCandidata, taxaMutacao);
-            double chiQuadradoMutante = calcularChiQuadrado(frequenciasLetras, descriptografarVigenere(textoCifrado, chaveMutante));
+            String chaveMutante = gerarChaveMutante(chaveInicial, taxaMutacao);
+            double chiQuadradoMutanteTotal = 0.0;
+            for (int i = 0; i < textosCifrados.length; i++) {
+                String textoCifrado = textosCifrados[i];
+                chiQuadradoMutanteTotal += calcularChiQuadrado(frequenciasLetras[i], descriptografarVigenere(textoCifrado, chaveMutante));
+            }
 
-            // Se a mutação melhorar o chi-quadrado, atualizar a chave candidata
-            if (chiQuadradoMutante < chiQuadradoAtual) {
-                chaveCandidata = chaveMutante;
-                System.out.println("Iteração: " + iteracao + ", Chi-Quadrado: " + chiQuadradoMutante + ", Chave: " + chaveCandidata);
+            // Se a mutação melhorar o chi-quadrado total, atualizar a chave candidata
+            if (chiQuadradoMutanteTotal < chiQuadradoTotal) {
+                chaveInicial = chaveMutante;
+                System.out.println("Iteração: " + iteracao + ", Chi-Quadrado Total: " + chiQuadradoMutanteTotal + ", Chave: " + chaveInicial);
             }
         }
 
-        return chaveCandidata;
+        return chaveInicial;
     }
     // Método para gerar uma chave candidata aleatória
     private static String gerarChaveCandidataAleatoria() {
@@ -269,7 +285,7 @@ public class Cifra {
         double chiQuadradoTotal = 0.0;
         Map<Character, Integer> frequenciaObservada = calcularFrequenciaLetras(texto);
         for (char letra : alfabetos) {
-            int frequenciaEsperadaLetra = frequenciaEsperada.getOrDefault(letra, 0);
+            int frequenciaEsperadaLetra = frequenciaEsperada.getOrDefault(letra, 0); //TODO frequenciaEsperadaLetra pode ser 0 se não tiver nenhuma ocorrencia da letra no texto
             int frequenciaObservadaLetra = frequenciaObservada.getOrDefault(letra, 0);
             double contribuicaoChiQuadrado = Math.pow((frequenciaEsperadaLetra - frequenciaObservadaLetra), 2) / frequenciaEsperadaLetra;
             chiQuadradoTotal += contribuicaoChiQuadrado;
@@ -277,8 +293,6 @@ public class Cifra {
         return chiQuadradoTotal;
     }
 
-    // Constante para definir o limite de chi-quadrado aceitável para uma chave candidata
-    private static final double CHAVE_CANDIDATA_ACEITAVEL = 10.0;
 
 
     public static HashMap<Character, Float> sortByValueF(HashMap<Character, Float> hm)
@@ -298,13 +312,6 @@ public class Cifra {
             temp.put(aa.getKey(), aa.getValue());
         }
         return temp;
-    }
-
-    private static int diferencaEntreChars(char a, char b) {
-        int ia = getIndexByChar(a);
-        int ib = getIndexByChar(b);
-
-        return Math.max(ia, ib) - Math.min(ia, ib);
     }
 
     private static HashMap<Character, Integer> sortByValue(HashMap<Character, Integer> hm) {
