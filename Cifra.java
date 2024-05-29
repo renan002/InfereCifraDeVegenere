@@ -246,18 +246,15 @@ public class Cifra {
                         chaveInicial = chaveMutanteMais;
                         if (!diminuidos.contains(j))
                             aumentados.add(j);
-                        //System.out.println("Offet: "+offset+" MAIS - Iteração: " + iteracao + ", Chi-Quadrado Total: " + chiQuadradoMutanteTotalMais + ", Chave: " + chaveInicial);
+                        System.out.println("Offet: "+offset+" MAIS - Iteração: " + iteracao + ", Chi-Quadrado Total: " + chiQuadradoMutanteTotalMais + ", Chave: " + chaveInicial);
                         chiQuadradoTotal = chiQuadradoMutanteTotalMais;
 
                     } else if (chiQuadradoMutanteTotalMenos < chiQuadradoTotal && chiQuadradoMutanteTotalMenos < chiQuadradoMutanteTotalMais) {
                         chaveInicial = chaveMutanteMenos;
                         if (!aumentados.contains(j))
                             diminuidos.add(j);
-                        //System.out.println("Offet: "+offset+" MENOS - Iteração: " + iteracao + ", Chi-Quadrado Total: " + chiQuadradoMutanteTotalMenos + ", Chave: " + chaveInicial);
+                        System.out.println("Offet: "+offset+" MENOS - Iteração: " + iteracao + ", Chi-Quadrado Total: " + chiQuadradoMutanteTotalMenos + ", Chave: " + chaveInicial);
                         chiQuadradoTotal = chiQuadradoMutanteTotalMenos;
-                    } else {
-                        //diminuidos.remove(j);
-                        //aumentados.remove(j);
                     }
                 }
             }
